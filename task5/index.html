@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Task5</title>
+    <style type="text/css">
+    body {
+        border: 0;
+        margin: 0;
+        padding: 0;
+    }
+    </style>
+</head>
+
+<body>
+    <canvas id="mainCanvas"></canvas>
+    <script type="text/javascript" src="../lib/three.js"></script>
+    <script type="text/javascript" src="../lib/stats.min.js"></script>
+    <script type="text/javascript" src="../lib/TrackballControls.js"></script>
+    <script type="text/javascript">
+    var scene;
+    var renderer;
+    var camera;
+    var controls;
+    var canvas;
+
+    function initThree() {
+        canvas = document.getElementById('mainCanvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        scene = new THREE.Scene();
+        renderer = new THREE.WebGLRenderer({
+            canvas: canvas
+        });
+        renderer.setClearColor(0x404040);
+
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    }
+
+    function initCamera() {
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, .1, 1000);
+        camera.position.set(0, 7, 10);
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+        scene.add(camera);
+    }
+
+    function initLight() {
+        var ambientLight = new THREE.AmbientLight(0xaaaaaa);
+        var light = new THREE.PointLight(0xffffff);
+
+        light.position.set(-10, 10, 7);
+        light.castShadow = true;
+        scene.add(light);
+
+        light.shadow.mapSize.width = 1000;
+        light.shadow.mapSize.height = 1000;
+        light.shadow.camera.near = 0.5;
+        light.shadow.camera.far = 500;
+        scene.add(ambientLight);
+        scene.add(light);
+    }
+
+    function initControls() {
+        controls = new THREE.TrackballControls(camera);
+
+        controls.rotateSpeed = 1.0;
+        controls.zoomSpeed = 1.2;
+        controls.panSpeed = 0.8;
+
+        controls.noZoom = false;
+        controls.noPan = false;
+
+        controls.staticMoving = true;
+        controls.dynamicDampingFactor = 0.3;
+
+        controls.keys = [65, 83, 68];
+
+        controls.addEventListener('change', render);
+    }
+
+    var cube = {};
+    var floor = {};
+    var dir = [
+        [.85, .5],
+        [.85, -.5],
+        [-.65, .5],
+        [-.65, -.5]
+    ];
+    var torusArr = [];
+    var car = {};
+    var world = {};
+    var stat;
+
+    function render() {
+        camera.lookAt(car.getWorldPosition());
+        renderer.render(scene, camera);
+        stats.update();
+    }
+
+    function animate() {
+        controls.update();
+        // render();
+        requestAnimationFrame(animate);
+    }
+
+    function initFloor() {
+        var texture = new THREE.TextureLoader().load('../img/task5/floor.jpg', function() {
+            renderer.render(scene, camera);
+        });
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(8, 8);
+
+        var material = new THREE.MeshLambertMaterial({
+            map: texture,
+            color: 0xffffff,
+            side: THREE.DoubleSide
+        });
+        floor = new THREE.Mesh(new THREE.PlaneGeometry(16, 16, 1, 1), material);
+        floor.rotation.set(Math.PI / 2, 0, 0);
+        floor.position.set(-1, -0.2, -1);
+        floor.receiveShadow = true;
+        scene.add(floor);
+    }
+
+    function initTorus() {
+        var texture = new THREE.TextureLoader().load('../img/task5/wheel.jpg', function() {
+            renderer.render(scene, camera);
+        });
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(1, 1);
+        for (var i = 0; i < dir.length; i++) {
+            var torus = new THREE.Mesh(new THREE.TorusGeometry(.14, .06, 20, 30),
+                new THREE.MeshLambertMaterial({
+                    color: 0x555555,
+                    map: texture
+                })
+            );
+            torus.castShadow = true;
+            torus.receiveShadow = true;
+            torus.position.set(dir[i][0], 0, dir[i][1]);
+            torusArr.push(torus);
+            scene.add(torus);
+        }
+    }
+
+    function initCube() {
+        var materials = [];
+        for (var i = 1; i <= 6; ++i) {
+            materials.push(new THREE.MeshLambertMaterial({
+                map: new THREE.TextureLoader().load('../img/task5/car' + i + '.jpg', function() {
+                    renderer.render(scene, camera);
+                }),
+                overdraw: true
+            }));
+        }
+
+        cube = new THREE.Mesh(new THREE.CubeGeometry(3, 1, 1), new THREE.MultiMaterial(materials));
+        cube.position.set(0, .45, 0);
+        cube.castShadow = true;
+        scene.add(cube);
+    }
+
+    function initCar() {
+        car = new THREE.Object3D();
+        car.add(cube);
+        scene.add(car);
+
+        for (var i = 0; i < dir.length; i++) {
+            car.add(torusArr[i]);
+        }
+    }
+
+    function move(moveOn) {
+        if (turning) {
+            turning = false;
+            for (var i = 0; i <= 1; i++) {
+                torusArr[i].rotation.y = 0;
+            }
+        }
+        else {
+            var carDirection = car.getWorldDirection();
+            carDirection.applyAxisAngle((new THREE.Vector3(0, 1, 0)).normalize(), Math.PI / 2);
+            var theta = Math.atan2(carDirection.x, carDirection.z);
+            car.position.x += .1 * moveOn * Math.sin(theta);
+            car.position.z += .1 * moveOn * Math.cos(theta);            
+        }
+        render();
+    }
+
+    var turning = false;
+    function turn(turnLeft) {
+        if (!turning) {
+            turning = true;
+        }
+        else {
+            car.rotation.y += .1 * turnLeft;
+        }
+        for (var i = 0; i <= 1; i++) {
+            torusArr[i].rotation.y = .5 * turnLeft;
+        }
+        render();
+    }
+
+    function initMove() {
+        window.onkeydown = function(e) {
+            // 左，上，右，下
+            switch (e.keyCode) {
+                case 37:
+                case 65:
+                    turn(1);
+                    break;
+                case 38:
+                case 87:
+                    move(1);
+                    break;
+                case 39:
+                case 68:
+                    turn(-1);
+                    break;
+                case 40:
+                case 83:
+                    move(-1);
+                    break;
+            }
+        };
+    }
+
+    function init() {
+        initThree();
+        initCamera();
+        initLight();
+        initControls();
+
+        initFloor();
+        initTorus();
+        initCube();
+        initCar();
+
+        stats = new Stats();
+        document.body.appendChild(stats.dom);
+
+        render();
+        animate();
+
+        initMove();
+    }
+
+    init();
+    </script>
+</body>
+
+</html>
