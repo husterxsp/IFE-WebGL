@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Task6</title>
+    <style type="text/css">
+    body {
+        border: 0;
+        margin: 0;
+        padding: 0;
+    }
+    </style>
+</head>
+
+<body>
+    <canvas id="mainCanvas"></canvas>
+    <script type="text/javascript" src="../lib/three.js"></script>
+    <script type="text/javascript" src="../lib/OBJLoader.js"></script>
+    <script type="text/javascript" src="../lib/MTLLoader.js"></script>
+    <script type="text/javascript" src="../lib/stats.min.js"></script>
+    <script type="text/javascript" src="../lib/TrackballControls.js"></script>
+    <script type="text/javascript">
+    var scene;
+    var renderer;
+    var camera;
+    var controls;
+    var canvas;
+
+    function initThree() {
+        canvas = document.getElementById('mainCanvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        scene = new THREE.Scene();
+        renderer = new THREE.WebGLRenderer({
+            canvas: canvas
+        });
+        renderer.setClearColor(0x404040);
+
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    }
+
+    function initCamera() {
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, .1, 1000);
+        camera.position.set(0, 7, 10);
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+        scene.add(camera);
+    }
+
+    function initLight() {
+        var ambientLight = new THREE.AmbientLight(0xaaaaaa);
+        var light = new THREE.PointLight(0xffffff);
+
+        light.position.set(-10, 10, 7);
+        light.castShadow = true;
+        scene.add(light);
+
+        light.shadow.mapSize.width = 1000;
+        light.shadow.mapSize.height = 1000;
+        light.shadow.camera.near = 0.5;
+        light.shadow.camera.far = 500;
+        scene.add(ambientLight);
+        scene.add(light);
+    }
+
+    function initControls() {
+        controls = new THREE.TrackballControls(camera);
+
+        controls.rotateSpeed = 1.0;
+        controls.zoomSpeed = 1.2;
+        controls.panSpeed = 0.8;
+
+        controls.noZoom = false;
+        controls.noPan = false;
+
+        controls.staticMoving = true;
+        controls.dynamicDampingFactor = 0.3;
+
+        controls.keys = [65, 83, 68];
+
+        controls.addEventListener('change', render);
+    }
+
+    var floor = {};
+    var bus = undefined;
+    var stat;
+
+    function render() {
+        if (bus) {
+            camera.lookAt(bus.getWorldPosition());
+        }
+        renderer.render(scene, camera);
+        stats.update();
+    }
+
+    function animate() {
+        controls.update();
+        // render();
+        requestAnimationFrame(animate);
+    }
+
+    function initFloor() {
+        var texture = new THREE.TextureLoader().load('../img/task5/floor.jpg', function() {
+            renderer.render(scene, camera);
+        });
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(8, 8);
+
+        var material = new THREE.MeshLambertMaterial({
+            map: texture,
+            color: 0xffffff,
+            side: THREE.DoubleSide
+        });
+        floor = new THREE.Mesh(new THREE.PlaneGeometry(16, 16, 1, 1), material);
+        floor.rotation.set(Math.PI / 2, 0, 0);
+        floor.position.set(-1, -0.2, -1);
+        floor.receiveShadow = true;
+        scene.add(floor);
+    }
+
+    function move(moveOn) {
+        if (!bus) return;
+        if (turning) {
+            turning = false;
+            for (var i = 4; i <= 5; i++) {
+                bus.children[i].rotation.y = 0;
+            }
+        }
+        else {
+            var busDirection = bus.getWorldDirection();
+            busDirection.applyAxisAngle((new THREE.Vector3(0, 1, 0)).normalize(), Math.PI);
+            var theta = Math.atan2(busDirection.x, busDirection.z);
+            bus.position.x += .1 * moveOn * Math.sin(theta);
+            bus.position.z += .1 * moveOn * Math.cos(theta);
+        }
+        render();
+    }
+
+    var turning = false;
+    var torusArr = [];
+
+    function turn(turnLeft) {
+        if (!bus) return;
+
+        if (!turning) {
+            turning = true;
+        }
+        else {
+            bus.rotation.y += .1 * turnLeft;
+        }
+
+        for (var i = 0; i <= 1; i++) {
+            // 车轮的旋转轴有点不太对啊啊啊。。
+            torusArr[i].rotation.y = .05 * turnLeft;
+        }
+
+        render();
+    }
+
+    function initMove() {
+        window.onkeydown = function(e) {
+            // 左，上，右，下
+            switch (e.keyCode) {
+                case 37:
+                case 65:
+                    turn(1);
+                    break;
+                case 38:
+                case 87:
+                    move(1);
+                    break;
+                case 39:
+                case 68:
+                    turn(-1);
+                    break;
+                case 40:
+                case 83:
+                    move(-1);
+                    break;
+            }
+        };
+    }
+
+    function initModel() {
+        var onProgress = function(xhr) {
+            if (xhr.lengthComputable) {
+                var percentComplete = xhr.loaded / xhr.total * 100;
+                console.log(Math.round(percentComplete, 2) + '% downloaded');
+            }
+        };
+
+        var onError = function(xhr) {};
+
+        var mtlLoader = new THREE.MTLLoader();
+        mtlLoader.setPath('../model/task6/');
+        mtlLoader.load('bus.mtl', function(materials) {
+
+            materials.preload();
+
+            var objLoader = new THREE.OBJLoader();
+            objLoader.setMaterials(materials);
+            objLoader.setPath('../model/task6/');
+            objLoader.load('bus.obj', function(object) {
+                object.position.y = 1.1;
+                object.rotation.y = Math.PI / 2;
+                scene.add(object);
+
+                bus = object;
+                bus.castShadow = true;
+                for (var i = 0; i < bus.children.length; i++) {
+                    bus.children[i].castShadow = true;
+                }
+
+                for (var i = 4; i <= 5; i++) {
+                    torusArr.push(bus.children[i]);
+                }
+
+                render();
+            }, onProgress, onError);
+        });
+    }
+
+    function init() {
+
+        initThree();
+        initCamera();
+        initLight();
+        initControls();
+
+        initFloor();
+        initModel();
+
+        stats = new Stats();
+        document.body.appendChild(stats.dom);
+
+        render();
+        animate();
+
+        initMove();
+    }
+
+    init();
+    </script>
+</body>
+
+</html>

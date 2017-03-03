@@ -7,3 +7,4 @@ demo:
 + [task3](https://husterxsp.github.io/IFE-WebGL/task3/)
 + [task4](https://husterxsp.github.io/IFE-WebGL/task4/)
 + [task5](https://husterxsp.github.io/IFE-WebGL/task5/)
++ [task6](https://husterxsp.github.io/IFE-WebGL/task6/)
