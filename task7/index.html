@@ -10,11 +10,20 @@
         margin: 0;
         padding: 0;
     }
+    #loading {
+        position: absolute;
+        font-size: 20px;
+        color: #999;
+        width: 100%;
+        top: 0;
+        text-align: center;
+    }
     </style>
 </head>
 
 <body>
     <canvas id="mainCanvas"></canvas>
+    <div id="loading"></div>
     <script type="text/javascript" src="../lib/zepto.min.js"></script>
     <script type="text/javascript" src="../lib/three.js"></script>
     <script type="text/javascript" src="../lib/OBJLoader.js"></script>
@@ -111,10 +120,16 @@
     var fragmentShader;
 
     function initModel() {
+        var loading = document.getElementById('loading');
         var onProgress = function(xhr) {
             if (xhr.lengthComputable) {
                 var percentComplete = xhr.loaded / xhr.total * 100;
-                console.log(Math.round(percentComplete, 2) + '% downloaded');
+                loading.innerHTML = Math.round(percentComplete, 2) + '% downloaded';
+                console.log(Math.round(percentComplete, 2));
+
+                if (percentComplete == 100) {
+                    loading.innerHTML = '';
+                }
             }
         };
 
