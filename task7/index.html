@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Task7</title>
+    <style type="text/css">
+    body {
+        border: 0;
+        margin: 0;
+        padding: 0;
+    }
+    </style>
+</head>
+
+<body>
+    <canvas id="mainCanvas"></canvas>
+    <script type="text/javascript" src="../lib/zepto.min.js"></script>
+    <script type="text/javascript" src="../lib/three.js"></script>
+    <script type="text/javascript" src="../lib/OBJLoader.js"></script>
+    <script type="text/javascript" src="../lib/MTLLoader.js"></script>
+    <script type="text/javascript" src="../lib/stats.min.js"></script>
+    <script type="text/javascript" src="../lib/dat.gui.min.js"></script>
+    <script type="text/javascript" src="../lib/TrackballControls.js"></script>
+    <script type="text/javascript">
+    var scene;
+    var renderer;
+    var camera;
+    var controls;
+    var canvas;
+
+    function initThree() {
+        canvas = document.getElementById('mainCanvas');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        scene = new THREE.Scene();
+        renderer = new THREE.WebGLRenderer({
+            canvas: canvas
+        });
+        renderer.setClearColor(0x404040);
+
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    }
+
+    function initCamera() {
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, .1, 1000);
+        camera.position.set(0, 7, 10);
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+        scene.add(camera);
+    }
+
+    var light;
+
+    function initLight() {
+        var ambientLight = new THREE.AmbientLight(0xffffff);
+        light = new THREE.PointLight(0xffffff);
+
+        light.position.set(-10, 10, 7);
+        light.castShadow = true;
+        scene.add(light);
+
+        light.shadow.mapSize.width = 1000;
+        light.shadow.mapSize.height = 1000;
+        light.shadow.camera.near = 0.5;
+        light.shadow.camera.far = 500;
+        scene.add(ambientLight);
+        scene.add(light);
+    }
+
+    function initControls() {
+        controls = new THREE.TrackballControls(camera, renderer.domElement);
+
+        controls.rotateSpeed = 1.0;
+        controls.zoomSpeed = 1.2;
+        controls.panSpeed = 0.8;
+
+        controls.noZoom = false;
+        controls.noPan = false;
+
+        controls.staticMoving = true;
+        controls.dynamicDampingFactor = 0.3;
+
+        controls.keys = [65, 83, 68];
+
+        controls.addEventListener('change', render);
+    }
+
+    var floor = {};
+    var teapot = undefined;
+    var stat;
+
+    function render() {
+        if (teapot) {
+            camera.lookAt(teapot.getWorldPosition());
+        }
+        renderer.render(scene, camera);
+        stats.update();
+    }
+
+    function animate() {
+        controls.update();
+        // render();
+        requestAnimationFrame(animate);
+    }
+
+    var normalMaterial;
+    var cartoonMaterial;
+    var vertexShader;
+    var fragmentShader;
+
+    function initModel() {
+        var onProgress = function(xhr) {
+            if (xhr.lengthComputable) {
+                var percentComplete = xhr.loaded / xhr.total * 100;
+                console.log(Math.round(percentComplete, 2) + '% downloaded');
+            }
+        };
+
+        var onError = function(xhr) {};
+
+        var mtlLoader = new THREE.MTLLoader();
+        mtlLoader.setPath('../model/task7/');
+        mtlLoader.load('teapot.mtl', function(materials) {
+
+            materials.preload();
+
+            var objLoader = new THREE.OBJLoader();
+            objLoader.setMaterials(materials);
+            objLoader.setPath('../model/task7/');
+            objLoader.load('teapot.obj', function(object) {
+                scene.add(object);
+                teapot = object;
+
+                teapot.traverse(function(child) {
+                    if (child instanceof THREE.Mesh) {
+                        child.material.side = THREE.DoubleSide;
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        normalMaterial = child.material;
+                    }
+
+                });
+
+                loadShader();
+                render();
+
+            }, onProgress, onError);
+        });
+    }
+
+    function loadShader() {
+        $.get('../shader/task7/cartoon.vs', function(vs) {
+            $.get('../shader/task7/cartoon.fs', function(fs) {
+                vertexShader = vs;
+                fragmentShader = fs;
+                createCartoon();
+                setupShader();
+            });
+        });
+    }
+
+
+    function createCartoon() {
+        cartoonMaterial = new THREE.ShaderMaterial({
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            uniforms: {
+                color: {
+                    type: 'v3',
+                    value: new THREE.Color(GUIObj.teapotColor)
+                },
+                uAmbientColor: {
+                    type: 'v3',
+                    value: new THREE.Color('#ffffff')
+                },
+                light: {
+                    type: 'v3',
+                    value: light.position
+                }
+            },
+            side: THREE.DoubleSide
+        });
+        setupShader();
+    }
+
+    function setupShader() {
+        var material = GUIObj.shaderType == 'normal' ? normalMaterial : cartoonMaterial;
+        teapot.traverse(function(child) {
+            if (child instanceof THREE.Mesh) {
+                child.material = material;
+            }
+        });
+        render();
+    }
+
+    var GUIObj = {
+        shaderType: 'cartoon',
+        lightX: -10,
+        lightY: 10,
+        lightZ: 7
+    };
+
+    function initGUI() {
+        var gui = new dat.GUI();
+        gui.remember(GUIObj);
+        gui.add(GUIObj, 'shaderType', ['cartoon', 'normal'])
+            .onChange(function(value) {
+                setupShader();
+            });
+
+        gui.add(GUIObj, 'lightX')
+            .min(-20).max(20).step(1)
+            .onChange(function(value) {
+                light.position.x = value;
+                createCartoon();
+            });
+        gui.add(GUIObj, 'lightY')
+            .min(-20).max(20).step(1)
+            .onChange(function(value) {
+                light.position.y = value;
+                createCartoon();
+            });
+        gui.add(GUIObj, 'lightZ')
+            .min(-20).max(20).step(1)
+            .onChange(function(value) {
+                light.position.z = value;
+                createCartoon();
+            });
+    }
+
+    function init() {
+
+        initThree();
+        initCamera();
+        initLight();
+        initControls();
+        initGUI();
+
+        initModel();
+
+        stats = new Stats();
+        document.body.appendChild(stats.dom);
+
+        render();
+        animate();
+
+    }
+
+    init();
+    </script>
+</body>
+
+</html>
