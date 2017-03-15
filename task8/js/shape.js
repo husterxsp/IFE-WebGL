@@ -51,7 +51,7 @@ function createShape() {
         this.setAngularFactor(new THREE.Vector3(0, 0, 0));
     });
 
-    setTimeout(createShape, 2000);
+    setTimeout(createShape, 3000);
     // 删除之后会报错还是ammo.js里面的。。
     // setTimeout(clear, 15000);
     // function clear () {

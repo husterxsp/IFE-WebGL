@@ -314,10 +314,10 @@ function initSound() {
 
     // Web Audio 。。怎么中间好多噪音。。。
     sounds = {
-        driving: '../sound/task8/driving.wav',
-        accelerate: '../sound/task8/short.wav',
-        bounce: '../sound/task8/bounce.wav',
-        crash: '../sound/task8/crash.wav',
+        driving: '../sound/task8/driving.mp3',
+        accelerate: '../sound/task8/accelerate.mp3',
+        bounce: '../sound/task8/bounce.mp3',
+        crash: '../sound/task8/crash.mp3',
         score: '../sound/task8/score.mp3',
     };
     for (var key in sounds) {
