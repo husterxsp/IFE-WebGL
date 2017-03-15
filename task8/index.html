@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Task8</title>
+    <style type="text/css">
+    body {
+        border: 0;
+        margin: 0;
+        padding: 0;
+    }
+    
+    #hud {
+        position: absolute;
+        padding: 20px;
+        width: 200px;
+        top: 100px;
+        left: 0;
+    }
+    </style>
+</head>
+
+<body>
+<!--     <audio id="driving" src="../sound/task8/driving.wav" loop="loop"></audio>
+    <audio id="accelerate" src="../sound/task8/accelerate.wav"></audio>
+    <audio id="bounce" src="../sound/task8/bounce.wav"></audio>
+    <audio id="get-crash" src="../sound/task8/crash.wav"></audio>
+    <audio id="get-score" src="../sound/task8/score.mp3"></audio> -->
+    <div id="hud">
+        <p>1. 按上下左右方向键移动小车。按T键可将偏离跑道的小车瞬移到跑道上。</p>
+        <p>2. 碰撞到正方体可得分，碰到球体小车会被停下。小心速度太快容易翻车哦~</p>
+        <p>得分：<span id="score">0</span></p>
+        <p>撞车：<span id="crash">0</span></p>
+        <p>游戏已进行：<span id="time">0</span></p>
+    </div>
+    <canvas id="mainCanvas"></canvas>
+
+    <script type="text/javascript" src="../lib/three.js"></script>
+    <script type="text/javascript" src="../lib/stats.min.js"></script>
+    <script type="text/javascript" src="../lib/physi.js"></script>
+    <script type="text/javascript" src="./js/shape.js"></script>
+    <script type="text/javascript" src='./js/index.js'></script>
+</body>
+
+</html>

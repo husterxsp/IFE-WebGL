@@ -30,5 +30,4 @@ void main() {
 
     gl_FragColor = vec4(uColor * uLightColor * diffuse + uColor * uAmbientColor, 1.0);
 
-
 }
