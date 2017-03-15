@@ -13,6 +13,11 @@ var crashElement = document.getElementById('crash');
 var textLoader = new THREE.TextureLoader();
 var audioLoader = new THREE.AudioLoader();
 
+var input = {
+    power: null,
+    direction: null,
+    steering: 0
+};
 
 Physijs.scripts.worker = '../lib/physijs_worker.js';
 Physijs.scripts.ammo = '../lib/ammo.js';
@@ -258,11 +263,6 @@ function initModel() {
                 );
             }
 
-            input = {
-                power: null,
-                direction: null,
-                steering: 0
-            };
             document.addEventListener('keydown', function (e) {
                 switch (e.keyCode) {
                     case 37: // left

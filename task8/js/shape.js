@@ -5,7 +5,7 @@ function createShape() {
 
     var shape;
     var material = Physijs.createMaterial(
-        new THREE.MeshLambertMaterial({ map: textLoader.load('../../img/task8/plywood.jpg') }),
+        new THREE.MeshLambertMaterial({ map: textLoader.load('../img/task8/plywood.jpg') }),
         1,
         0.1
     );
