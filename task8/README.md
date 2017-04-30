@@ -11,3 +11,6 @@
     + 你可以自己设计一些其他功能的物体；
     + 有能力的同学可以使用 Three.js 的[音频模块](https://threejs.org/docs/?q=au#Reference/Audio/Audio) 加入相应的音效。
 + 在界面上实现得分显示。
+
+---
+小车模型来自[https://github.com/tparisi/WebGLBook](https://github.com/tparisi/WebGLBook)
